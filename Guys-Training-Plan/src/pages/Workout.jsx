@@ -8,7 +8,6 @@ const defaultWorkouts = {
     { name: "One-Arm Dumbbell Row", sets: 3, reps: 8, weight: 24 },
     { name: "Cable Pull Over", sets: 2, reps: 10, weight: 25 },
   ],
-
   B: [
     { name: "Deadlift", sets: 3, reps: 6, weight: 75 },
     { name: "Chin Up", sets: 3, reps: 4, weight: 0 },
@@ -26,17 +25,29 @@ export default function Workout() {
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("currentWorkout"));
     const hist = JSON.parse(localStorage.getItem("workoutHistory")) || [];
+
     if (saved) {
       setWorkoutType(saved.type);
       setWorkout(saved.data);
     } else {
-      setWorkout([...defaultWorkouts[workoutType]]);
+      const stored = JSON.parse(localStorage.getItem(`workout_${workoutType}`));
+      if (stored) {
+        setWorkout(stored);
+      } else {
+        setWorkout([...defaultWorkouts[workoutType]]);
+      }
     }
+
     setHistory(hist);
   }, []);
 
   useEffect(() => {
-    setWorkout([...defaultWorkouts[workoutType]]);
+    const stored = JSON.parse(localStorage.getItem(`workout_${workoutType}`));
+    if (stored) {
+      setWorkout(stored);
+    } else {
+      setWorkout([...defaultWorkouts[workoutType]]);
+    }
   }, [workoutType]);
 
   const updateWorkout = () => {
@@ -50,7 +61,8 @@ export default function Workout() {
     setHistory(newHistory);
     localStorage.setItem("workoutHistory", JSON.stringify(newHistory));
 
-    // שמירת האימון האחרון
+    // שמירת האימון הנוכחי והמעודכן
+    localStorage.setItem(`workout_${workoutType}`, JSON.stringify(workout));
     localStorage.setItem("currentWorkout", JSON.stringify({ type: workoutType, data: workout }));
 
     // מעבר לאימון הבא
@@ -58,26 +70,21 @@ export default function Workout() {
     setWorkoutType(nextWorkoutType);
   };
 
-  const clearHistory = () => {
-    const confirmed = window.confirm('Are you sure you want to clear the workout history?');
-    if (!confirmed) return;
-
-    localStorage.removeItem("workoutHistory");
-    setHistory([]);
-  };
-
   const handleChange = (index, field, value) => {
     const updated = [...workout];
-    updated[index][field] = parseInt(value);
+    updated[index][field] = parseFloat(value);
     setWorkout(updated);
+  };
+
+  const clearHistory = () => {
+    localStorage.removeItem("workoutHistory");
+    setHistory([]);
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-3xl font-bold text-center">
-          Workout {workoutType}
-        </h1>
+        <h1 className="text-3xl font-bold text-center">Workout {workoutType}</h1>
         <p className="text-sm font-normal text-gray-400 text-center mt-1">
           {new Date().toLocaleDateString()}
         </p>
@@ -131,7 +138,7 @@ export default function Workout() {
                     type="number"
                     value={exercise.weight}
                     onChange={(e) => handleChange(idx, "weight", e.target.value)}
-                    className="bg-gray-700 text-white text-center w-16 rounded"
+                    className="bg-gray-700 text-white text-center w-20 rounded"
                   />
                 </td>
               </tr>
@@ -153,9 +160,8 @@ export default function Workout() {
           {history.map((entry, i) => (
             <li key={i} className="border border-gray-700 rounded p-3 bg-gray-800">
               <div className="font-semibold text-white mb-2">
-                Workout {entry.type}
+                {entry.date} - Workout {entry.type}
               </div>
-              <div className="text-xs text-gray-400 mb-2">{entry.date}</div>
               <ul className="list-disc list-inside text-left">
                 {entry.data.map((ex, j) => (
                   <li key={j}>
